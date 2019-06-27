@@ -1,0 +1,14 @@
+{
+  "name": "lambda-export-table-mysql-to-s3",
+  "version": "1.0.0",
+  "description": "Lambda AWS Export mysql table into a file csv and put it in a bucket",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "fcorreia",
+  "license": "ISC",
+  "dependencies": {
+    "mysql": "latest"
+  }
+}
