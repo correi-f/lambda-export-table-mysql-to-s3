@@ -23,6 +23,29 @@ const connection = mysql.createConnection({
     port     : process.env.RDS_PORT
 });
 
+const connectDatabase = () => {
+  return new Promise(function (resolve, reject) {
+    connection.connect(function(error) {
+      if (error) {
+        console.error(`Database connection failed: ${error.stack}`);
+        reject(error);
+      }
+    });
+
+    console.log('Connected to database.');
+    connection.query("SELECT * FROM table_name", function (error, result) {
+        if (error) {
+          console.log("Error in the select table_name");
+          reject(error);
+        }
+        resolve(result);
+    });
+
+    console.log('Closing the database connection');
+    connection.end();
+  });
+}
+
 exports.handler = async (_, context, callback) => {
     const bucket = process.env.BUCKET_NAME;
     const date = new Date();
@@ -31,30 +54,19 @@ exports.handler = async (_, context, callback) => {
       Bucket: bucket,
       Key: key,
     };
-
-    await connection.connect(function(err) {
-        if (err) {
-          console.error(`Database connection failed: ${err.stack}`);
-          callback(err);
-        }
-        console.log('Connected to database.');
-        await con.query("SELECT * FROM table_name", function (err, result) {
-            if (err) {
-              console.log("Error in the select table_name");
-              callback(err);
-            }
-            params.data = result;
-        });
+   
+    const result = await connectDatabase().catch(function(error) {
+      console.error("Database connection failed", error);
+      callback(error);
     });
 
-    console.log('Closing the database connection');
-    connection.end();
-
+    params.data = result;
     console.log(`Putting Object : ${key} in the bucket ${bucket}`);
-    s3.putObject(params, function (err) {
-        if (err) {
-          console.log(`Error in ${context.functionName} : ${err}`);
-          callback(err);
-        }
+    s3.putObject(params, function (error) {
+      if (error) {
+        console.log(`Error in ${context.functionName} : ${error}`);
+        callback(error);
+      }
+      console.log(`Object successfuly put: ${key} in the bucket ${bucket}`);
     });
 };
